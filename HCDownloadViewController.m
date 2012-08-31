@@ -247,11 +247,6 @@
 			[self cancelDownloadingURLAtIndex:indexPath.row];
 }
 
-- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
-{
-	cell.imageView.layer.cornerRadius = 7.5f;
-}
-
 // NSURLConnectionDelegate
 
 - (void)connection:(NSURLConnection *)conn didReceiveResponse:(NSURLResponse *)resp
