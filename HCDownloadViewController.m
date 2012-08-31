@@ -154,7 +154,6 @@
 	if (title == nil) title = NSLocalizedString(@"Downloading...", nil);
 	cell.textLabel.text = title;
 	cell.imageView.image = [userInfo objectForKey:kHCDownloadKeyImage];
-	cell.imageView.layer.cornerRadius = 7.5f;
 
 	NSFileHandle *fileHandle = [dict objectForKey:kHCDownloadKeyFileHandle];
 	if (fileHandle != nil)
@@ -229,6 +228,11 @@
 	[self setupCell:cell withAttributes:dict];
 
 	return cell;
+}
+
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
+{
+	cell.imageView.layer.cornerRadius = 7.5f;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
