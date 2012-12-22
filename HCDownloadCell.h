@@ -1,4 +1,4 @@
-/**
+/*
  * HCDownloadCell.h
  * HCDownload
  *

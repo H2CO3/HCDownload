@@ -1,4 +1,4 @@
-/**
+/*
  * HCDownloadViewController.m
  * HCDownload
  *
@@ -9,14 +9,19 @@
 #import <QuartzCore/QuartzCore.h>
 #import "HCDownloadViewController.h"
 
+/*
+ * User info keys for internal use
+ */
 #define kHCDownloadKeyURL @"URL"
 #define kHCDownloadKeyStartTime @"startTime"
 #define kHCDownloadKeyTotalSize @"totalSize"
 #define kHCDownloadKeyConnection @"connection"
-#define kHCDownloadKeyFileName @"fileName"
 #define kHCDownloadKeyFileHandle @"fileHandle"
 #define kHCDownloadKeyUserInfo @"userInfo"
 
+/*
+ * Private methods
+ */
 @interface HCDownloadViewController ()
 - (void)removeURL:(NSURL *)url;
 - (void)removeURLAtIndex:(NSInteger)index;
@@ -36,8 +41,7 @@
 
 - (id)initWithStyle:(UITableViewStyle)style
 {
-	if ((self = [super initWithStyle:style]))
-	{
+	if ((self = [super initWithStyle:style])) {
 		downloads = [[NSMutableArray alloc] init];
 		self.downloadDirectory = @"/var/mobile/Downloads";
 		self.title = NSLocalizedString(@"Downloads", nil);
@@ -48,9 +52,11 @@
 
 - (void)dealloc
 {
+	// Cancel all downloads in progress
 	[self.tableView beginUpdates];
-	while (downloads.count > 0)
+	while (downloads.count > 0) {
 		[self removeURLAtIndex:0];
+	}
 
 	[self.tableView endUpdates];
 
@@ -82,8 +88,9 @@
 	NSMutableDictionary *dict = [NSMutableDictionary dictionary];
 	[dict setObject:url forKey:kHCDownloadKeyURL];
 	[dict setObject:conn forKey:kHCDownloadKeyConnection];
-	if (userInfo != nil)
+	if (userInfo != nil) {
 		[dict setObject:userInfo forKey:kHCDownloadKeyUserInfo];
+	}
 
 	NSIndexPath *indexPath = [NSIndexPath indexPathForRow:downloads.count inSection:0];
 	[downloads addObject:dict];
@@ -100,8 +107,7 @@
 	NSURL *url = [[dict objectForKey:kHCDownloadKeyUserInfo] retain];
 	[self removeURLAtIndex:index];
 
-	if ([self.delegate respondsToSelector:@selector(downloadController:failedDownloadingURL:withError:userInfo:)])
-	{
+	if ([self.delegate respondsToSelector:@selector(downloadController:failedDownloadingURL:withError:userInfo:)]) {
 		NSError *error = [NSError errorWithDomain:kHCDownloadErrorDomain code:kHCDownloadErrorCodeCancelled userInfo:nil];
 		[self.delegate downloadController:self failedDownloadingURL:url withError:error userInfo:userInfo];
 	}
@@ -113,18 +119,18 @@
 - (void)removeURL:(NSURL *)url
 {
 	NSInteger index = -1;
-	for (NSDictionary *d in downloads)
-	{
+	NSDictionary *d;
+	for (d in downloads) {
 		NSURL *otherUrl = [d objectForKey:kHCDownloadKeyURL];
-		if ([otherUrl isEqual:url])
-		{
+		if ([otherUrl isEqual:url]) {
 			index = [downloads indexOfObject:d];
 			break;
 		}
 	}
 
-	if (index != -1)
+	if (index != -1) {
 		[self removeURLAtIndex:index];
+	}
 }
 
 - (void)removeURLAtIndex:(NSInteger)index
@@ -142,8 +148,9 @@
 	NSArray *paths = [NSArray arrayWithObject:indexPath];
 	[self.tableView deleteRowsAtIndexPaths:paths withRowAnimation:UITableViewRowAnimationRight];
 	
-	if (downloads.count == 0)
+	if (downloads.count == 0) {
 		[UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
+	}
 }
 
 - (void)setupCell:(HCDownloadCell *)cell withAttributes:(NSDictionary *)dict
@@ -155,9 +162,9 @@
 	cell.textLabel.text = title;
 	cell.imageView.image = [userInfo objectForKey:kHCDownloadKeyImage];
 
+	// Calculate the progress
 	NSFileHandle *fileHandle = [dict objectForKey:kHCDownloadKeyFileHandle];
-	if (fileHandle != nil)
-	{
+	if (fileHandle != nil) {
 		unsigned long long downloaded = [fileHandle offsetInFile];
 		NSDate *startTime = [dict objectForKey:kHCDownloadKeyStartTime];
 		unsigned long long total = [[dict objectForKey:kHCDownloadKeyTotalSize] unsignedLongLongValue];
@@ -196,9 +203,7 @@
 		cell.detailTextLabel.text = subtitle;
 		cell.progress = downloadedF / totalF;
 		[subtitle release];
-	}
-	else
-	{
+	} else {
 		cell.detailTextLabel.text = nil;
 	}
 }
@@ -217,14 +222,12 @@
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-	HCDownloadCell *cell = [tableView dequeueReusableCellWithIdentifier:kHCDownloadCellID];
-	if (cell == nil)
-	{
+	HCDownloadCell *cell = (HCDownloadCell *)[tableView dequeueReusableCellWithIdentifier:kHCDownloadCellID];
+	if (cell == nil) {
 		cell = [HCDownloadCell cell];
 	}
 
 	NSMutableDictionary *dict = [downloads objectAtIndex:indexPath.row];
-	
 	[self setupCell:cell withAttributes:dict];
 
 	return cell;
@@ -242,21 +245,31 @@
 
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)style forRowAtIndexPath:(NSIndexPath *)indexPath
 {
-	if (style == UITableViewCellEditingStyleDelete)
-		if (indexPath.section == 0)
+	// Handle delete action initiated by the user
+	if (style == UITableViewCellEditingStyleDelete) {
+		if (indexPath.section == 0) {
 			[self cancelDownloadingURLAtIndex:indexPath.row];
+		}
+	}
 }
 
 // NSURLConnectionDelegate
 
 - (void)connection:(NSURLConnection *)conn didReceiveResponse:(NSURLResponse *)resp
 {
-	for (NSMutableDictionary *dict in downloads)
-	{
+	// Search for the connection in all downloads
+	NSMutableDictionary *dict;
+	for (dict in downloads) {
 		NSURLConnection *otherConn = [dict objectForKey:kHCDownloadKeyConnection];
-		if ([otherConn isEqual:conn])
-		{
-			NSString *fileName = [resp suggestedFilename];
+		if ([otherConn isEqual:conn]) { // found the connection
+			// If no default filename is provided, use the suggested one
+			NSDictionary *userInfo = [dict objectForKey:kHCDownloadKeyUserInfo];
+			NSString *fileName = [userInfo objectForKey:kHCDownloadKeyFileName];
+			if (fileName == nil) {
+				fileName = [resp suggestedFilename];
+			}
+			
+			// Create the file to be written
 			NSString *path = [self.downloadDirectory stringByAppendingPathComponent:fileName];
 			[[NSFileManager defaultManager] createFileAtPath:path contents:nil attributes:nil];
 			NSFileHandle *fileHandle = [NSFileHandle fileHandleForWritingAtPath:path];
@@ -264,21 +277,22 @@
 			[dict setObject:fileHandle forKey:kHCDownloadKeyFileHandle];
 
 			long long length = [resp expectedContentLength];
-			if (length != NSURLResponseUnknownLength)
-			{
+			if (length != NSURLResponseUnknownLength) {
 				NSNumber *totalSize = [NSNumber numberWithUnsignedLongLong:(unsigned long long)length];
 				[dict setObject:totalSize forKey:kHCDownloadKeyTotalSize];
 			}
 
+			// Set the start time in order to be able to calculate
+			// an approximate remaining time
 			[dict setObject:[NSDate date] forKey:kHCDownloadKeyStartTime];
 
-			if ([self.delegate respondsToSelector:@selector(downloadController:startedDownloadingURL:userInfo:)])
-			{
+			// Notify the delegate
+			if ([self.delegate respondsToSelector:@selector(downloadController:startedDownloadingURL:userInfo:)]) {
 				NSURL *url = [dict objectForKey:kHCDownloadKeyURL];
-				NSDictionary *userInfo = [dict objectForKey:kHCDownloadKeyUserInfo];
 				[self.delegate downloadController:self startedDownloadingURL:url userInfo:userInfo];
 			}
 
+			// Refresh the table view
 			[self.tableView reloadData];
 			break;
 		}
@@ -287,20 +301,29 @@
 
 - (void)connection:(NSURLConnection *)conn didReceiveData:(NSData *)data
 {
-
-	for (NSMutableDictionary *dict in downloads)
-	{
+	NSMutableDictionary *dict;
+	for (dict in downloads) {
 		NSURLConnection *otherConn = [dict objectForKey:kHCDownloadKeyConnection];
-		if ([otherConn isEqual:conn])
-		{
+		if ([otherConn isEqual:conn]) {
 			NSFileHandle *fileHandle = [dict objectForKey:kHCDownloadKeyFileHandle];
 			[fileHandle writeData:data];
 		
+			// Update the corresponding table view cell
 			NSInteger row = [downloads indexOfObject:dict];
 			NSIndexPath *indexPath = [NSIndexPath indexPathForRow:row inSection:0];
-			HCDownloadCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+			HCDownloadCell *cell = (HCDownloadCell *)[self.tableView cellForRowAtIndexPath:indexPath];
 			
 			[self setupCell:cell withAttributes:dict];
+			
+			// Notify the delegate
+			if ([self.delegate respondsToSelector:@selector(downloadController:dowloadedFromURL:progress:userInfo:)]) {
+				NSURL *url = [dict objectForKey:kHCDownloadKeyURL];
+				NSDictionary *userInfo = [dict objectForKey:kHCDownloadKeyUserInfo];
+				unsigned long long totalSize = [(NSNumber *)[dict objectForKey:kHCDownloadKeyTotalSize] unsignedLongLongValue];
+				unsigned long long downloadSize = [fileHandle offsetInFile];
+				float progress = (float)downloadSize / totalSize;
+				[self.delegate downloadController:self dowloadedFromURL:url progress:progress userInfo:userInfo];
+			}
 			break;
 		}
 	}
@@ -310,22 +333,22 @@
 {
 	NSInteger index = -1;
 	NSMutableDictionary *d = nil;
-	for (NSMutableDictionary *dict in downloads)
-	{
+	NSMutableDictionary *dict;
+	
+	// Search for the download context dictionary
+	for (dict in downloads) {
 		NSURLConnection *otherConn = [dict objectForKey:kHCDownloadKeyConnection];
-		if ([otherConn isEqual:conn])
-		{
+		if ([otherConn isEqual:conn]) {
 			d = [dict retain];
 			index = [downloads indexOfObject:dict];
 			break;
 		}
 	}
 
-	if (index != -1)
-	{
+	// Clen up
+	if (index != -1) {
 		[self removeURLAtIndex:index];
-		if ([self.delegate respondsToSelector:@selector(downloadController:finishedDownloadingURL:toFile:userInfo:)])
-		{
+		if ([self.delegate respondsToSelector:@selector(downloadController:finishedDownloadingURL:toFile:userInfo:)]) {
 			NSString *fileName = [d objectForKey:kHCDownloadKeyFileName];
 			NSURL *url = [d objectForKey:kHCDownloadKeyURL];
 			NSDictionary *userInfo = [d objectForKey:kHCDownloadKeyUserInfo];
@@ -340,25 +363,25 @@
 {
 	NSInteger index = -1;
 	NSMutableDictionary *d = nil;
-	for (NSMutableDictionary *dict in downloads)
-	{
+	NSMutableDictionary *dict;
+	
+	// Search for the download context dictionary
+	for (dict in downloads) {
 		NSURLConnection *otherConn = [dict objectForKey:kHCDownloadKeyConnection];
-		if ([otherConn isEqual:conn])
-		{
+		if ([otherConn isEqual:conn]) {
 			d = [dict retain];
 			index = [downloads indexOfObject:dict];
 			break;
 		}
 	}
 
-	if (index != -1)
-	{
+	// Clean up
+	if (index != -1) {
 		[self removeURLAtIndex:index];
 		NSURL *url = [[d objectForKey:kHCDownloadKeyURL] retain];
 		NSDictionary *userInfo = [d objectForKey:kHCDownloadKeyUserInfo];
 
-		if ([self.delegate respondsToSelector:@selector(downloadController:failedDownloadingURL:withError:userInfo:)])
-		{
+		if ([self.delegate respondsToSelector:@selector(downloadController:failedDownloadingURL:withError:userInfo:)]) {
 			[self.delegate downloadController:self failedDownloadingURL:url withError:error userInfo:userInfo];
 		}
 	}
@@ -367,4 +390,3 @@
 }
 
 @end
-

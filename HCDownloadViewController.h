@@ -1,4 +1,4 @@
-/**
+/*
  * HCDownloadViewController.h
  * HCDownload
  *
@@ -12,6 +12,7 @@
 
 #define kHCDownloadKeyTitle @"key"
 #define kHCDownloadKeyImage @"image"
+#define kHCDownloadKeyFileName @"fileName"
 #define kHCDownloadErrorDomain @"HCDownloadErrorDomain"
 #define kHCDownloadErrorCodeCancelled (-1)
 
@@ -20,6 +21,7 @@
 @protocol HCDownloadViewControllerDelegate <NSObject>
 @optional
 - (void)downloadController:(HCDownloadViewController *)vc startedDownloadingURL:(NSURL *)url userInfo:(NSDictionary *)userInfo;
+- (void)downloadController:(HCDownloadViewController *)vc dowloadedFromURL:(NSURL *)url progress:(float)progress userInfo:(NSDictionary *)userInfo;
 - (void)downloadController:(HCDownloadViewController *)vc finishedDownloadingURL:(NSURL *)url toFile:(NSString *)fileName userInfo:(NSDictionary *)userInfo;
 - (void)downloadController:(HCDownloadViewController *)vc failedDownloadingURL:(NSURL *)url withError:(NSError *)error userInfo:(NSDictionary *)userInfo;
 @end
@@ -35,6 +37,5 @@
 @property (nonatomic, assign) id <HCDownloadViewControllerDelegate> delegate;
 
 - (void)downloadURL:(NSURL *)url userInfo:(NSDictionary *)userInfo;
-// - (void)cancelDownloadingURL:(NSURL *)url;
 
 @end

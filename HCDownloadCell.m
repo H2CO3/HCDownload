@@ -1,4 +1,4 @@
-/**
+/*
  * HCDownloadCell.m
  * HCDownload
  *
@@ -21,8 +21,7 @@
 
 - (id)initWithStyle:(UITableViewCellStyle)s reuseIdentifier:(NSString *)ruid
 {
-	if ((self = [super initWithStyle:s reuseIdentifier:ruid]))
-	{
+	if ((self = [super initWithStyle:s reuseIdentifier:ruid])) {
 		self.textLabel.backgroundColor = [UIColor clearColor];
 		self.textLabel.font = [UIFont boldSystemFontOfSize:12.0f];
 
@@ -65,4 +64,3 @@
 }
 
 @end
-
