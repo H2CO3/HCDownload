@@ -1,4 +1,4 @@
-## Usage:
+## HCDOWNLOAD:
 
     HCDownloadViewController *dlvc = [[HCDownloadViewController alloc] init];
     dlvc.downloadDirectory = @"/var/mobile/Library/Downloads";
